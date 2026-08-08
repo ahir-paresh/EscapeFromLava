@@ -177,6 +177,14 @@ namespace EscapeFromLava
                         }
                         instantiatedTile.transform.localScale = finalScale;
 
+                        // Attach and initialize TileController component
+                        TileController tileController = instantiatedTile.GetComponent<TileController>();
+                        if (tileController == null)
+                        {
+                            tileController = instantiatedTile.AddComponent<TileController>();
+                        }
+                        tileController.Initialize(tileType, c, r);
+
                         // Apply Wave bobbing if enabled
                         if (enableWaveAnimation)
                         {

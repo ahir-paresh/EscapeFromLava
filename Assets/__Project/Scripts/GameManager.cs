@@ -198,6 +198,13 @@ namespace EscapeFromLava
         {
             SetGameState(GameState.GameOverWon);
             Debug.Log("EscapeFromLava: Level Completed! Player Won!");
+
+            // Calculate and submit completion time to Google Play Services Leaderboard
+            float completionTime = timeLimit - timeRemaining;
+            if (GPGSLeaderboardManager.Instance != null)
+            {
+                GPGSLeaderboardManager.Instance.SubmitLevelCompletionTime(completionTime);
+            }
         }
 
         private void LoseGame()

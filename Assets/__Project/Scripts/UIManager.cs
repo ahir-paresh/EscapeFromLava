@@ -9,12 +9,27 @@ namespace EscapeFromLava
         [Header("HUD References")]
         [SerializeField] private TMP_Text timerText;
         [SerializeField] private TMP_Text scoreText;
+        [SerializeField] private TMP_Text livesText;
         [SerializeField] private GameObject[] heartIcons;
 
-        [Header("Game Over Panel References")]
-        [SerializeField] private GameObject gameOverPanel;
-        [SerializeField] private TMP_Text gameOverTitleText;
-        [SerializeField] private Button restartButton;
+        [Header("Victory (Game Complete) Panel References")]
+        [SerializeField] private GameObject winPanel;
+        [SerializeField] private Button winRestartButton;
+
+        [Header("Defeat (Game Over) Panel References")]
+        [SerializeField] private GameObject losePanel;
+        [SerializeField] private Button loseRestartButton;
+
+        [Header("Pause Panel References")]
+        [SerializeField] private GameObject pausePanel;
+        [SerializeField] private Button pauseButton;
+        [SerializeField] private Button resumeButton;
+
+        [Header("Delay Settings")]
+        [Tooltip("Seconds to wait after game over/complete before showing the panel overlay.")]
+        [SerializeField] private float showPanelDelay = 2.0f;
+
+        private Coroutine panelDelayCoroutine;
 
         private void OnEnable()
         {
@@ -24,9 +39,21 @@ namespace EscapeFromLava
             GameEventManager.OnLivesChanged += HandleLivesChanged;
             GameEventManager.OnTimerChanged += HandleTimerChanged;
 
-            if (restartButton != null)
+            if (winRestartButton != null)
             {
-                restartButton.onClick.AddListener(OnRestartButtonClicked);
+                winRestartButton.onClick.AddListener(OnRestartButtonClicked);
+            }
+            if (loseRestartButton != null)
+            {
+                loseRestartButton.onClick.AddListener(OnRestartButtonClicked);
+            }
+            if (pauseButton != null)
+            {
+                pauseButton.onClick.AddListener(OnPauseButtonClicked);
+            }
+            if (resumeButton != null)
+            {
+                resumeButton.onClick.AddListener(OnResumeButtonClicked);
             }
         }
 
@@ -38,59 +65,125 @@ namespace EscapeFromLava
             GameEventManager.OnLivesChanged -= HandleLivesChanged;
             GameEventManager.OnTimerChanged -= HandleTimerChanged;
 
-            if (restartButton != null)
+            if (winRestartButton != null)
             {
-                restartButton.onClick.RemoveListener(OnRestartButtonClicked);
+                winRestartButton.onClick.RemoveListener(OnRestartButtonClicked);
+            }
+            if (loseRestartButton != null)
+            {
+                loseRestartButton.onClick.RemoveListener(OnRestartButtonClicked);
+            }
+            if (pauseButton != null)
+            {
+                pauseButton.onClick.RemoveListener(OnPauseButtonClicked);
+            }
+            if (resumeButton != null)
+            {
+                resumeButton.onClick.RemoveListener(OnResumeButtonClicked);
             }
         }
 
         private void Start()
         {
-            // Ensure Game Over UI starts hidden
-            if (gameOverPanel != null)
+            // Ensure all panels start hidden
+            if (winPanel != null)
             {
-                gameOverPanel.SetActive(false);
+                winPanel.SetActive(false);
+            }
+            if (losePanel != null)
+            {
+                losePanel.SetActive(false);
+            }
+            if (pausePanel != null)
+            {
+                pausePanel.SetActive(false);
             }
         }
 
         private void HandleGameStateChanged(GameState state)
         {
-            if (gameOverPanel == null) return;
+            // Stop any active delayed panel display coroutine
+            if (panelDelayCoroutine != null)
+            {
+                StopCoroutine(panelDelayCoroutine);
+                panelDelayCoroutine = null;
+            }
 
             switch (state)
             {
                 case GameState.Playing:
-                    gameOverPanel.SetActive(false);
+                    if (winPanel != null) winPanel.SetActive(false);
+                    if (losePanel != null) losePanel.SetActive(false);
+                    if (pausePanel != null) pausePanel.SetActive(false);
+                    break;
+
+                case GameState.Paused:
+                    if (winPanel != null) winPanel.SetActive(false);
+                    if (losePanel != null) losePanel.SetActive(false);
+                    if (pausePanel != null) pausePanel.SetActive(true);
                     break;
 
                 case GameState.GameOverWon:
-                    gameOverPanel.SetActive(true);
-                    if (gameOverTitleText != null)
-                    {
-                        gameOverTitleText.text = "Victory!\nYou Escaped the Lava!";
-                    }
-                    break;
-
                 case GameState.GameOverLost:
-                    gameOverPanel.SetActive(true);
-                    if (gameOverTitleText != null)
-                    {
-                        gameOverTitleText.text = "Defeat!\nConsumed by Lava!";
-                    }
+                    // Deactivate immediately on state change, then show after delay
+                    if (winPanel != null) winPanel.SetActive(false);
+                    if (losePanel != null) losePanel.SetActive(false);
+                    if (pausePanel != null) pausePanel.SetActive(false);
+                    
+                    panelDelayCoroutine = StartCoroutine(ShowPanelDelayed(state));
                     break;
             }
+        }
+
+        private void OnPauseButtonClicked()
+        {
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.PauseGame();
+            }
+        }
+
+        private void OnResumeButtonClicked()
+        {
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.ResumeGame();
+            }
+        }
+
+        private System.Collections.IEnumerator ShowPanelDelayed(GameState state)
+        {
+            yield return new WaitForSeconds(showPanelDelay);
+
+            if (state == GameState.GameOverWon)
+            {
+                if (winPanel != null) winPanel.SetActive(true);
+                if (losePanel != null) losePanel.SetActive(false);
+            }
+            else if (state == GameState.GameOverLost)
+            {
+                if (winPanel != null) winPanel.SetActive(false);
+                if (losePanel != null) losePanel.SetActive(true);
+            }
+
+            panelDelayCoroutine = null;
         }
 
         private void HandleScoreChanged(int current, int total)
         {
             if (scoreText != null)
             {
-                scoreText.text = $"Diamonds: {current} / {total}";
+                scoreText.text = $"{current} / {total}";
             }
         }
 
         private void HandleLivesChanged(int lives)
         {
+            if (livesText != null)
+            {
+                livesText.text = $"{lives}";
+            }
+
             if (heartIcons == null) return;
 
             // Enable hearts representing active lives, disable the rest
@@ -107,7 +200,7 @@ namespace EscapeFromLava
         {
             if (timerText != null)
             {
-                timerText.text = $"Time: {Mathf.CeilToInt(timeRemaining)}s";
+                timerText.text = $"{Mathf.CeilToInt(timeRemaining)}s";
             }
         }
 

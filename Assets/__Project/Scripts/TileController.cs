@@ -15,6 +15,7 @@ namespace EscapeFromLava
         public TileType Type => tileType;
         public int Col => column;
         public int Row => row;
+        public bool IsCollected { get; set; } = false;
 
         private void Awake()
         {

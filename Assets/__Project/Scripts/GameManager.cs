@@ -54,6 +54,9 @@ namespace EscapeFromLava
 
         public void InitializeGame()
         {
+            // Reset timescale to normal in case we were paused
+            Time.timeScale = 1f;
+
             // Find and count all diamonds in the scene
             TileController[] tiles = FindObjectsOfType<TileController>();
             totalDiamonds = 0;
@@ -126,17 +129,12 @@ namespace EscapeFromLava
             switch (tile.Type)
             {
                 case TileType.BlueDiamond:
-                    // Collect Diamond
+                    // Check if already collected
+                    if (tile.IsCollected) break;
+
+                    tile.IsCollected = true;
                     collectedDiamonds++;
                     GameEventManager.TriggerScoreChanged(collectedDiamonds, totalDiamonds);
-                    
-                    // Destroy tile after collection (with a tiny frame delay to allow animation triggers if any)
-                    Destroy(tile.gameObject);
-                    
-                    if (activeClickedTile == tile)
-                    {
-                        activeClickedTile = null;
-                    }
 
                     // Check Win Condition
                     if (collectedDiamonds >= totalDiamonds)
@@ -208,11 +206,40 @@ namespace EscapeFromLava
             Debug.Log("EscapeFromLava: Game Over! Player Lost!");
         }
 
+        public void TogglePause()
+        {
+            if (currentState == GameState.Playing)
+            {
+                PauseGame();
+            }
+            else if (currentState == GameState.Paused)
+            {
+                ResumeGame();
+            }
+        }
+
+        public void PauseGame()
+        {
+            if (currentState != GameState.Playing) return;
+            SetGameState(GameState.Paused);
+            Time.timeScale = 0f;
+            Debug.Log("EscapeFromLava: Game Paused.");
+        }
+
+        public void ResumeGame()
+        {
+            if (currentState != GameState.Paused) return;
+            SetGameState(GameState.Playing);
+            Time.timeScale = 1f;
+            Debug.Log("EscapeFromLava: Game Resumed.");
+        }
+
         /// <summary>
         /// Restarts the current active level scene.
         /// </summary>
         public void RestartLevel()
         {
+            Time.timeScale = 1f; // Ensure time is restored on load
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
     }

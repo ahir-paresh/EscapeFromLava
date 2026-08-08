@@ -4,6 +4,7 @@ namespace EscapeFromLava
     {
         Ready,
         Playing,
+        Paused,
         GameOverWon,
         GameOverLost
     }

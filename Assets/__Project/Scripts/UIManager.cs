@@ -24,6 +24,7 @@ namespace EscapeFromLava
         [SerializeField] private GameObject pausePanel;
         [SerializeField] private Button pauseButton;
         [SerializeField] private Button resumeButton;
+        [SerializeField] private Button pauseRestartButton;
 
         [Header("Delay Settings")]
         [Tooltip("Seconds to wait after game over/complete before showing the panel overlay.")]
@@ -55,6 +56,10 @@ namespace EscapeFromLava
             {
                 resumeButton.onClick.AddListener(OnResumeButtonClicked);
             }
+            if (pauseRestartButton != null)
+            {
+                pauseRestartButton.onClick.AddListener(OnRestartButtonClicked);
+            }
         }
 
         private void OnDisable()
@@ -80,6 +85,10 @@ namespace EscapeFromLava
             if (resumeButton != null)
             {
                 resumeButton.onClick.RemoveListener(OnResumeButtonClicked);
+            }
+            if (pauseRestartButton != null)
+            {
+                pauseRestartButton.onClick.RemoveListener(OnRestartButtonClicked);
             }
         }
 
